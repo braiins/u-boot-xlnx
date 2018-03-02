@@ -124,3 +124,13 @@ config CONSOLE_RECORD_IN_SIZE
 	  tstc() and getc() will use this in preference to real device input.
 	  The buffer is allocated immediately after the malloc() region is
 	  ready.
+
+config ENV_IS_NOWHERE
+	bool "Environment is not stored"
+	default n
+	help
+	  Define this if you don't want to or can't have an environment stored
+	  on a storage medium. In this case the environemnt will still exist
+	  while U-Boot is running, but once U-Boot exits it will not be
+	  stored. U-Boot will therefore always start up with a default
+	  environment.
