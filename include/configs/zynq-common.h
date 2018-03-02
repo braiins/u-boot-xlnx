@@ -162,6 +162,16 @@
 # define CONFIG_CMD_FS_GENERIC
 #endif
 
+/* NAND */
+#ifdef CONFIG_NAND_ZYNQ
+# define CONFIG_CMD_NAND
+# define CONFIG_CMD_NAND_LOCK_UNLOCK
+# define CONFIG_SYS_MAX_NAND_DEVICE 1
+# define CONFIG_SYS_NAND_SELF_INIT
+# define CONFIG_SYS_NAND_ONFI_DETECTION
+# define CONFIG_MTD_DEVICE
+#endif
+
 #if defined(CONFIG_ZYNQ_I2C0) || defined(CONFIG_ZYNQ_I2C1)
 #define CONFIG_SYS_I2C_ZYNQ
 #endif
@@ -195,6 +205,9 @@
 # ifndef CONFIG_SYS_NO_FLASH
 /* Environment in NOR flash */
 #  define CONFIG_ENV_IS_IN_FLASH
+# elif defined(CONFIG_NAND_ZYNQ)
+/* Environment in NAND flash */
+#  define CONFIG_ENV_IS_IN_NAND
 # elif defined(CONFIG_ZYNQ_QSPI)
 /* Environment in Serial Flash */
 #  define CONFIG_ENV_IS_IN_SPI_FLASH
