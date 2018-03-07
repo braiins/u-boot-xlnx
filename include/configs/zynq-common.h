@@ -174,6 +174,13 @@
 # define CONFIG_SPL_NAND_DRIVERS
 # define CONFIG_SPL_NAND_BOOT
 # define CONFIG_SYS_NAND_U_BOOT_OFFS	0x00080000
+# define CONFIG_SYS_NAND_CHIPSIZE		0x10000000
+# define CONFIG_SYS_NAND_PAGE_SIZE		2048
+# define CONFIG_SYS_NAND_PAGE_COUNT		64
+# define CONFIG_SYS_NAND_OOBSIZE		64
+# define CONFIG_SYS_NAND_BLOCK_SIZE		0x20000
+# define CONFIG_SYS_NAND_BAD_BLOCK_POS	0x0
+# define CONFIG_SYS_NAND_ADDR_CYCLES	35 /* ROW: 3, COL: 2 */
 #endif
 
 #if defined(CONFIG_ZYNQ_I2C0) || defined(CONFIG_ZYNQ_I2C1)
@@ -251,6 +258,7 @@
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
 	"miner_cfg_size=0x10000\0" \
+	"system_size=0x200000\0" \
 	"select_firmware=" \
 		"if test $firmware = 1; then " \
 			"setenv firmware_name firmware1 && " \
@@ -270,6 +278,8 @@
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
 		"run select_firmware && " \
 		"setenv bootargs console=ttyPS0,115200 noinitrd ubi.mtd=${firmware_mtd} ubi.block=0,1 root=/dev/ubiblock0_1 r rootfstype=squashfs rootwait ${mtdparts} earlyprintk && " \
+		"nand read ${load_addr} system ${system_size} && " \
+		"fpga loadb 0 ${load_addr} ${system_size} && " \
 		"ubi part ${firmware_name} && " \
 		"ubi read ${load_addr} kernel && " \
 		"bootm ${load_addr}\0" \

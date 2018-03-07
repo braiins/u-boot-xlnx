@@ -164,6 +164,7 @@ static const struct zynq_nand_command_format zynq_nand_commands[] = {
 	 */
 };
 
+#ifndef CONFIG_SPL_BUILD
 /* Define default oob placement schemes for large and small page devices */
 static struct nand_ecclayout nand_oob_16 = {
 	.eccbytes = 3,
@@ -182,6 +183,7 @@ static struct nand_ecclayout nand_oob_64 = {
 		{ .offset = 2, .length = 50 }
 	}
 };
+#endif
 
 static struct nand_ecclayout ondie_nand_oob_64 = {
 	.eccbytes = 32,
@@ -286,6 +288,7 @@ static int zynq_nand_init_nand_flash(int option)
 	return 0;
 }
 
+#ifndef CONFIG_SPL_BUILD
 /*
  * zynq_nand_calculate_hwecc - Calculate Hardware ECC
  * @mtd:	Pointer to the mtd_info structure
@@ -390,6 +393,7 @@ static int zynq_nand_correct_data(struct mtd_info *mtd, unsigned char *buf,
 		return -1; /* Uncorrectable error */
 	}
 }
+#endif
 
 /*
  * zynq_nand_read_oob - [REPLACABLE] the most common OOB data read function
@@ -530,6 +534,7 @@ static int zynq_nand_write_page_raw(struct mtd_info *mtd,
 	return 0;
 }
 
+#ifndef CONFIG_SPL_BUILD
 /*
  * nand_write_page_hwecc - Hardware ECC based page write function
  * @mtd:	Pointer to the mtd info structure
@@ -737,6 +742,7 @@ static int zynq_nand_read_page_swecc(struct mtd_info *mtd,
 	}
 	return 0;
 }
+#endif
 
 /*
  * zynq_nand_select_chip - Select the flash device
@@ -1014,6 +1020,7 @@ static int zynq_nand_device_ready(struct mtd_info *mtd)
 	return 0;
 }
 
+#ifndef CONFIG_SPL_BUILD
 /*
  * zynq_nand_check_is_16bit_bw_flash - checking for 16 or 8 bit buswidth nand
  *
@@ -1131,7 +1138,7 @@ static int zynq_nand_init(struct nand_chip *nand_chip, int devnum)
 			writeb(set_feature[i], nand_chip->IO_ADDR_W);
 
 		/* wait for 1us after writing data with SET_FEATURES command */
-		ndelay(1000);
+		udelay(1);
 
 		nand_chip->cmdfunc(mtd, NAND_CMD_GET_FEATURES,
 						ONDIE_ECC_FEATURE_ADDR, -1);
@@ -1265,14 +1272,164 @@ void board_nand_init(void)
 		puts("ZYNQ NAND init failed\n");
 }
 
-#ifdef CONFIG_SPL_BUILD
+#else
+/* The following code is for SPL */
+static nand_info_t mtd;
+static struct nand_chip nand_chip;
+static struct zynq_nand_info xnand;
+
+static int nand_is_bad_block(int block)
+{
+	struct nand_chip *chip = mtd.priv;
+	u_char bb_data;
+
+	chip->cmdfunc(&mtd, NAND_CMD_READOOB, CONFIG_SYS_NAND_BAD_BLOCK_POS,
+		block * CONFIG_SYS_NAND_PAGE_COUNT);
+
+	chip->read_buf(&mtd, &bb_data, sizeof(bb_data));
+	return bb_data != 0xff;
+}
+
+static void nand_read_page(int block, int page, void *dst)
+{
+	struct nand_chip *chip = mtd.priv;
+	int page_addr = page + block * CONFIG_SYS_NAND_PAGE_COUNT;
+
+	chip->cmdfunc(&mtd, NAND_CMD_READ0, 0, page_addr);
+	chip->read_buf(&mtd, dst, CONFIG_SYS_NAND_PAGE_SIZE);
+}
+
 int nand_spl_load_image(uint32_t offs, unsigned int size, void *dst)
 {
+	unsigned int block, lastblock;
+	unsigned int page;
+
+	/*
+	 * offs has to be aligned to a page address!
+	 */
+	block = offs / CONFIG_SYS_NAND_BLOCK_SIZE;
+	lastblock = (offs + size - 1) / CONFIG_SYS_NAND_BLOCK_SIZE;
+	page = (offs % CONFIG_SYS_NAND_BLOCK_SIZE) / CONFIG_SYS_NAND_PAGE_SIZE;
+
+	while (block <= lastblock) {
+		if (!nand_is_bad_block(block)) {
+			/*
+			 * Skip bad blocks
+			 */
+			while (page < CONFIG_SYS_NAND_PAGE_COUNT) {
+				nand_read_page(block, page, dst);
+				dst += CONFIG_SYS_NAND_PAGE_SIZE;
+				page++;
+			}
+
+			page = 0;
+		} else {
+			lastblock++;
+		}
+
+		block++;
+	}
+
 	return 0;
 }
 
 void nand_init(void)
 {
+	u8 maf_id, dev_id, i;
+	u8 get_feature[4];
+	u8 set_feature[4] = {0x08, 0x00, 0x00, 0x00};
+	unsigned long ecc_cfg;
+
+	xnand.nand_base = (void *)ZYNQ_NAND_BASEADDR;
+
+	nand_chip.priv = &xnand;
+	mtd.priv = &nand_chip;
+
+	/* Set address of NAND IO lines */
+	nand_chip.IO_ADDR_R = xnand.nand_base;
+	nand_chip.IO_ADDR_W = xnand.nand_base;
+
+	/* Set the driver entry points for MTD */
+	nand_chip.cmdfunc = zynq_nand_cmd_function;
+	nand_chip.dev_ready = zynq_nand_device_ready;
+	nand_chip.select_chip = zynq_nand_select_chip;
+
+	/* If we don't set this delay driver sets 20us by default */
+	nand_chip.chip_delay = 30;
+
+	/* Buffer read/write routines */
+	nand_chip.read_buf = zynq_nand_read_buf;
+	nand_chip.write_buf = zynq_nand_write_buf;
+	nand_chip.bbt_options = NAND_BBT_USE_FLASH;
+
+	/* Initialize the NAND flash interface on NAND controller */
+	if (zynq_nand_init_nand_flash(nand_chip.options) < 0) {
+		printf("%s: nand flash init failed\n", __func__);
+		return;
+	}
+
+    mtd.writesize = CONFIG_SYS_NAND_PAGE_SIZE;
+	mtd.oobsize = CONFIG_SYS_NAND_OOBSIZE;
+	nand_chip.onfi_params.addr_cycles = CONFIG_SYS_NAND_ADDR_CYCLES;
+	nand_chip.chipsize = CONFIG_SYS_NAND_CHIPSIZE;
+
+	/* Send the command for reading device ID */
+	nand_chip.cmdfunc(&mtd, NAND_CMD_RESET, -1, -1);
+	nand_chip.cmdfunc(&mtd, NAND_CMD_READID, 0x00, -1);
+
+	/* Read manufacturer and device IDs */
+	maf_id = readb(nand_chip.IO_ADDR_R);
+	dev_id = readb(nand_chip.IO_ADDR_R);
+
+	if (maf_id != 0x2c || dev_id != 0xda) {
+		printf("Warning: Unsupported NAND ID (0x%02x/0x%02x)\n", maf_id, dev_id);
+	}
+
+	nand_chip.cmdfunc(&mtd, NAND_CMD_SET_FEATURES,
+					ONDIE_ECC_FEATURE_ADDR, -1);
+
+	for (i = 0; i < 4; i++)
+		writeb(set_feature[i], nand_chip.IO_ADDR_W);
+
+	/* wait for 1us after writing data with SET_FEATURES command */
+	udelay(1);
+
+	nand_chip.cmdfunc(&mtd, NAND_CMD_GET_FEATURES,
+					ONDIE_ECC_FEATURE_ADDR, -1);
+	nand_chip.read_buf(&mtd, get_feature, 4);
+
+	if (!(get_feature[0] & 0x08)) {
+		printf("Warning: Unable to detect OnDie ECC\n");
+	}
+
+	/* bypass the controller ECC block */
+	ecc_cfg = readl(&zynq_nand_smc_base->emcr);
+	ecc_cfg &= ~0xc;
+	writel(ecc_cfg, &zynq_nand_smc_base->emcr);
+
+	/* The software ECC routines won't work
+	 * with the SMC controller
+	 */
+	nand_chip.ecc.mode = NAND_ECC_HW;
+	nand_chip.ecc.strength = 1;
+	nand_chip.ecc.read_page = zynq_nand_read_page_raw_nooob;
+	nand_chip.ecc.read_subpage = zynq_nand_read_subpage_raw;
+	nand_chip.ecc.write_page = zynq_nand_write_page_raw;
+	nand_chip.ecc.read_page_raw = zynq_nand_read_page_raw;
+	nand_chip.ecc.write_page_raw = zynq_nand_write_page_raw;
+	nand_chip.ecc.read_oob = zynq_nand_read_oob;
+	nand_chip.ecc.write_oob = zynq_nand_write_oob;
+	nand_chip.ecc.size = mtd.writesize;
+	nand_chip.ecc.bytes = 0;
+
+	/* NAND with on-die ECC supports subpage reads */
+	nand_chip.options |= NAND_SUBPAGE_READ;
+
+	/* On-Die ECC spare bytes offset 8 is used for ECC codes */
+	nand_chip.ecc.layout = &ondie_nand_oob_64;
+	/* Use the BBT pattern descriptors */
+	nand_chip.bbt_td = &bbt_main_descr;
+	nand_chip.bbt_md = &bbt_mirror_descr;
 }
 
 void nand_deselect(void)
