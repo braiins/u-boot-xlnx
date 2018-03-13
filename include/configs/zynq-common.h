@@ -228,7 +228,10 @@
 
 # define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
 # define CONFIG_ENV_OFFSET		0x400000
+# define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
 #endif
+
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
 
 /* MTD parts support */
 #define CONFIG_CMD_MTDPARTS
@@ -257,7 +260,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
-	"miner_cfg_size=0x10000\0" \
+	"miner_cfg_size=0x20000\0" \
 	"system_size=0x200000\0" \
 	"select_firmware=" \
 		"if test $firmware = 1; then " \
