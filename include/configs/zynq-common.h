@@ -227,7 +227,7 @@
 # endif
 
 # define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
-# define CONFIG_ENV_OFFSET		0x400000
+# define CONFIG_ENV_OFFSET		0x600000
 # define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
 #endif
 
@@ -243,12 +243,13 @@
 	"mtdparts=pl35x-nand:" \
 		"512k(boot)," \
 		"1536k(uboot)," \
-		"2m(system)," \
+		"2m(fpga1)," \
+		"2m(fpga2)," \
 		"512k(uboot_env)," \
 		"512k(miner_cfg)," \
 		"15m(recovery)," \
-		"100m(firmware1)," \
-		"100m(firmware2)"
+		"99m(firmware1)," \
+		"99m(firmware2)"
 
 /* UBI support */
 #define CONFIG_CMD_UBI
@@ -261,14 +262,16 @@
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
 	"miner_cfg_size=0x20000\0" \
-	"system_size=0x200000\0" \
+	"bitstream_size=0x200000\0" \
 	"select_firmware=" \
 		"if test $firmware = 1; then " \
+			"setenv bitstream fpga1 && " \
 			"setenv firmware_name firmware1 && " \
-			"setenv firmware_mtd 6; " \
-		"else " \
-			"setenv firmware_name firmware2 && " \
 			"setenv firmware_mtd 7; " \
+		"else " \
+			"setenv bitstream fpga2 && " \
+			"setenv firmware_name firmware2 && " \
+			"setenv firmware_mtd 8; " \
 		"fi\0" \
 	"nandboot_init=echo Reseting miner configuration... && " \
 		"env default -a && " \
@@ -281,8 +284,8 @@
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
 		"run select_firmware && " \
 		"setenv bootargs console=ttyPS0,115200 noinitrd ubi.mtd=${firmware_mtd} ubi.block=0,1 root=/dev/ubiblock0_1 r rootfstype=squashfs rootwait ${mtdparts} earlyprintk && " \
-		"nand read ${load_addr} system ${system_size} && " \
-		"fpga loadb 0 ${load_addr} ${system_size} && " \
+		"nand read ${load_addr} ${bitstream} ${bitstream_size} && " \
+		"fpga loadb 0 ${load_addr} ${bitstream_size} && " \
 		"ubi part ${firmware_name} && " \
 		"ubi read ${load_addr} kernel && " \
 		"bootm ${load_addr}\0" \
