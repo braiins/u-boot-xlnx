@@ -264,7 +264,7 @@
 	"miner_cfg_size=0x20000\0" \
 	"bitstream_size=0x200000\0" \
 	"select_firmware=" \
-		"if test $firmware = 1; then " \
+		"if test x${firmware} = x1; then " \
 			"setenv bitstream fpga1 && " \
 			"setenv firmware_name firmware1 && " \
 			"setenv firmware_mtd 7; " \
@@ -272,6 +272,24 @@
 			"setenv bitstream fpga2 && " \
 			"setenv firmware_name firmware2 && " \
 			"setenv firmware_mtd 8; " \
+		"fi\0" \
+	"auto_recovery=" \
+		"if test x${upgrade_stage} = x0; then " \
+			"echo Trying to boot system after upgrade... && " \
+			"setenv upgrade_stage 1 && " \
+			"saveenv; " \
+		"elif test x${upgrade_stage} = x1; then " \
+			"echo Revert to previous firmware after unsuccessful upgrade... && " \
+			"if test x${firmware} = x1; then " \
+				"setenv firmware 2; " \
+			"else " \
+				"setenv firmware 1; " \
+			"fi; " \
+			"setenv upgrade_stage && " \
+			"saveenv && " \
+			"reset; " \
+		"else " \
+			"exit 0; " \
 		"fi\0" \
 	"nandboot_init=echo Reseting miner configuration... && " \
 		"env default -a && " \
@@ -283,6 +301,7 @@
 		"reset\0" \
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
 		"run select_firmware && " \
+		"run auto_recovery && " \
 		"setenv bootargs console=ttyPS0,115200 noinitrd ubi.mtd=${firmware_mtd} ubi.block=0,1 root=/dev/ubiblock0_1 r rootfstype=squashfs rootwait ${mtdparts} earlyprintk && " \
 		"nand read ${load_addr} ${bitstream} ${bitstream_size} && " \
 		"fpga loadb 0 ${load_addr} ${bitstream_size} && " \
