@@ -227,7 +227,7 @@
 # endif
 
 # define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
-# define CONFIG_ENV_OFFSET		0x600000
+# define CONFIG_ENV_OFFSET		0xB00000
 # define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
 #endif
 
@@ -242,14 +242,14 @@
 #define MTDPARTS_DEFAULT \
 	"mtdparts=pl35x-nand:" \
 		"512k(boot)," \
-		"1536k(uboot)," \
-		"2m(fpga1)," \
-		"2m(fpga2)," \
+		"2560k(uboot)," \
+		"4m(fpga1)," \
+		"4m(fpga2)," \
 		"512k(uboot_env)," \
 		"512k(miner_cfg)," \
-		"15m(recovery)," \
-		"99m(firmware1)," \
-		"99m(firmware2)"
+		"20m(recovery)," \
+		"95m(firmware1)," \
+		"95m(firmware2)"
 
 /* UBI support */
 #define CONFIG_CMD_UBI
