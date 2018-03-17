@@ -84,3 +84,6 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# LEDE auxiliary directory
+/ipkg-arm_cortex-a9_neon/

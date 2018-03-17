@@ -34,6 +34,12 @@ config TARGET_ZYNQ_ZC770
 config TARGET_ZYNQ_ZYBO
 	bool "Zynq Zybo Board"
 
+config TARGET_ZYNQ_DM1_G9
+	bool "Zynq DragonMint T1/G9 Board"
+
+config TARGET_ZYNQ_DM1_G19
+	bool "Zynq DragonMint T1/G19 Board"
+
 endchoice
 
 config SYS_BOARD
@@ -52,5 +58,6 @@ config SYS_CONFIG_NAME
 	default "zynq_zc70x" if TARGET_ZYNQ_ZC702 || TARGET_ZYNQ_ZC706
 	default "zynq_zc770" if TARGET_ZYNQ_ZC770
 	default "zynq_zybo" if TARGET_ZYNQ_ZYBO
+	default "zynq_dm1" if TARGET_ZYNQ_DM1_G9 || TARGET_ZYNQ_DM1_G19
 
 endif
