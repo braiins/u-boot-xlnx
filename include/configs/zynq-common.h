@@ -227,7 +227,7 @@
 # endif
 
 # define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
-# define CONFIG_ENV_OFFSET		0xB00000
+# define CONFIG_ENV_OFFSET		0x700000
 # define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
 #endif
 
@@ -243,11 +243,11 @@
 	"mtdparts=pl35x-nand:" \
 		"512k(boot)," \
 		"2560k(uboot)," \
-		"4m(fpga1)," \
-		"4m(fpga2)," \
+		"2m(fpga1)," \
+		"2m(fpga2)," \
 		"512k(uboot_env)," \
 		"512k(miner_cfg)," \
-		"20m(recovery)," \
+		"22m(recovery)," \
 		"95m(firmware1)," \
 		"95m(firmware2)"
 
@@ -259,10 +259,15 @@
 
 /* Default environment */
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"recovery=yes\0" \
+	"factory_reset=yes\0" \
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
 	"miner_cfg_size=0x20000\0" \
-	"bitstream_size=0x200000\0" \
+	"recovery_size=0x800000\0" \
+	"bitstream_recovery_off=0x1C00000\0" \
+	"bitstream_addr=0x2100000\0" \
+	"bitstream_size=0x100000\0" \
 	"select_firmware=" \
 		"if test x${firmware} = x1; then " \
 			"setenv bitstream fpga1 && " \
@@ -291,6 +296,13 @@
 		"else " \
 			"exit 0; " \
 		"fi\0" \
+	"nandboot_recovery=echo Running recovery process... && " \
+		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${mtdparts} earlyprintk && " \
+		"nand read ${load_addr} ${bitstream_recovery_off} ${bitstream_size} && " \
+		"unzip ${load_addr} ${bitstream_addr} && " \
+		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
+		"nand read ${load_addr} recovery ${recovery_size} && " \
+		"bootm ${load_addr}\0" \
 	"nandboot_init=echo Reseting miner configuration... && " \
 		"env default -a && " \
 		"nand read ${load_addr} miner_cfg ${miner_cfg_size} && " \
@@ -300,11 +312,15 @@
 		"saveenv && " \
 		"reset\0" \
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
+		"if test x${recovery} = xyes; then " \
+			"run nandboot_recovery; " \
+		"fi; " \
 		"run select_firmware && " \
 		"run auto_recovery && " \
 		"setenv bootargs console=ttyPS0,115200 noinitrd ubi.mtd=${firmware_mtd} ubi.block=0,1 root=/dev/ubiblock0_1 r rootfstype=squashfs rootwait ${mtdparts} earlyprintk && " \
 		"nand read ${load_addr} ${bitstream} ${bitstream_size} && " \
-		"fpga loadb 0 ${load_addr} ${bitstream_size} && " \
+		"unzip ${load_addr} ${bitstream_addr} && " \
+		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
 		"ubi part ${firmware_name} && " \
 		"ubi read ${load_addr} kernel && " \
 		"bootm ${load_addr}\0" \
