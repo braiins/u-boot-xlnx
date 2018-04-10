@@ -257,10 +257,14 @@
 #define CONFIG_RBTREE
 #define CONFIG_LZO
 
+#define CONFIG_UENV_ADDR	"0x2100000"
+#define CONFIG_UENV_SIZE	"0x1000"
+
 /* Default environment */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"recovery=yes\0" \
 	"factory_reset=yes\0" \
+	"first_boot=yes\0" \
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
 	"miner_cfg_size=0x20000\0" \
@@ -268,7 +272,14 @@
 	"bitstream_recovery_off=0x1C00000\0" \
 	"bitstream_addr=0x2100000\0" \
 	"bitstream_size=0x100000\0" \
-	"select_firmware=" \
+	"uenv_load=" \
+		"load mmc 0 ${load_addr} ${bootenv} && " \
+		"echo Loaded environment from ${bootenv} && " \
+		"env import -t ${load_addr} ${filesize}\0" \
+	"uenv_reset=echo Reseting miner configuration... && " \
+		"nand erase.part uboot_env && " \
+		"reset\0" \
+	"firmware_select=" \
 		"if test x${firmware} = x1; then " \
 			"setenv bitstream fpga1 && " \
 			"setenv firmware_name firmware1 && " \
@@ -291,11 +302,25 @@
 				"setenv firmware 1; " \
 			"fi; " \
 			"setenv upgrade_stage && " \
+			"setenv first_boot && " \
 			"saveenv && " \
 			"reset; " \
 		"else " \
 			"exit 0; " \
 		"fi\0" \
+	"nandboot_init=echo Running factory reset... && " \
+		"env default -a && " \
+		"if run uenv_load; then " \
+			"env export -s "CONFIG_UENV_SIZE" -t "CONFIG_UENV_ADDR" sd_boot sd_images && " \
+			"env default -a && " \
+			"env import -t "CONFIG_UENV_ADDR" "CONFIG_UENV_SIZE" ; " \
+		"fi; " \
+		"nand read ${load_addr} miner_cfg ${miner_cfg_size} && " \
+		"env import -c ${load_addr} ${miner_cfg_size} && " \
+		"env set nandboot \"${nandboot_default}\" && " \
+		"env delete nandboot_init nandboot_default && " \
+		"saveenv && " \
+		"run nandboot_recovery\0" \
 	"nandboot_recovery=echo Running recovery process... && " \
 		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${mtdparts} earlyprintk && " \
 		"nand read ${load_addr} ${bitstream_recovery_off} ${bitstream_size} && " \
@@ -303,19 +328,12 @@
 		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
 		"nand read ${load_addr} recovery ${recovery_size} && " \
 		"bootm ${load_addr}\0" \
-	"nandboot_init=echo Reseting miner configuration... && " \
-		"env default -a && " \
-		"nand read ${load_addr} miner_cfg ${miner_cfg_size} && " \
-		"env import -c ${load_addr} ${miner_cfg_size} && " \
-		"env set nandboot \"${nandboot_default}\" && " \
-		"env delete nandboot_init nandboot_default && " \
-		"saveenv && " \
-		"reset\0" \
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
-		"if test x${recovery} = xyes; then " \
-			"run nandboot_recovery; " \
-		"fi; " \
-		"run select_firmware && " \
+		"test x${first_boot} != xyes && run uenv_load; " \
+		"test x${factory_reset} = xyes && run uenv_reset; " \
+		"test x${sd_boot} = xyes && run sdboot; " \
+		"test x${recovery} = xyes && run nandboot_recovery; " \
+		"run firmware_select && " \
 		"run auto_recovery && " \
 		"setenv bootargs console=ttyPS0,115200 noinitrd ubi.mtd=${firmware_mtd} ubi.block=0,1 root=/dev/ubiblock0_1 r rootfstype=squashfs rootwait ${mtdparts} earlyprintk && " \
 		"nand read ${load_addr} ${bitstream} ${bitstream_size} && " \
@@ -328,13 +346,9 @@
 	"fit_image=fit.itb\0" \
 	"fpga_image=system.bit\0" \
 	"bootenv=uEnv.txt\0" \
-	"load_bootenv=load mmc 0 ${load_addr} ${bootenv}\0" \
 	"sdboot=echo Copying FIT from SD to RAM... && " \
 		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${mtdparts} earlyprintk && " \
-		"if run load_bootenv; then " \
-			"echo Loaded environment from ${bootenv} && " \
-			"env import -t ${load_addr} ${filesize}; " \
-		"fi; " \
+		"run uenv_load; " \
 		"if test -n ${uenvcmd}; then " \
 			"echo Running uenvcmd... && " \
 			"run uenvcmd; " \
