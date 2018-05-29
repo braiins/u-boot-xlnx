@@ -262,7 +262,6 @@
 
 /* Default environment */
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"recovery=yes\0" \
 	"factory_reset=yes\0" \
 	"first_boot=yes\0" \
 	"firmware=1\0" \
@@ -322,13 +321,21 @@
 		"saveenv && " \
 		"run nandboot_recovery\0" \
 	"nandboot_recovery=echo Running recovery process... && " \
-		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${mtdparts} earlyprintk && " \
+		"test -n ${recovery_mtdparts} || setenv recovery_mtdparts ${mtdparts}; " \
+		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${recovery_mtdparts} earlyprintk && " \
 		"nand read ${load_addr} ${bitstream_recovery_off} ${bitstream_size} && " \
 		"unzip ${load_addr} ${bitstream_addr} && " \
 		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
 		"nand read ${load_addr} recovery ${recovery_size} && " \
 		"bootm ${load_addr}\0" \
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
+		"if test x${recovery} = xyes; then " \
+			"recovery=${recovery}; " \
+			"recovery_mtdparts=${recovery_mtdparts}; " \
+			"env set recovery; " \
+			"env set recovery_mtdparts; " \
+			"saveenv; " \
+		"fi; " \
 		"test x${first_boot} != xyes && run uenv_load; " \
 		"test x${factory_reset} = xyes && run uenv_reset; " \
 		"test x${sd_boot} = xyes && run sdboot; " \
