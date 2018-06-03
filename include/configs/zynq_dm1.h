@@ -13,6 +13,7 @@
 #define CONFIG_SYS_NO_FLASH
 
 #define CONFIG_CMD_UNZIP
+#define CONFIG_CMD_SETEXPR
 
 #include <configs/zynq-common.h>
 

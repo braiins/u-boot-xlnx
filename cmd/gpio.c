@@ -24,6 +24,27 @@ enum gpio_cmd {
 	GPIO_TOGGLE,
 };
 
+#ifdef CONFIG_XILINX_GPIO
+/* Allocation functions */
+extern int gpio_alloc_dual(u32 baseaddr, const char *name, u32 gpio_no0,
+			   u32 gpio_no1);
+extern int gpio_alloc(u32 baseaddr, const char *name, u32 gpio_no);
+
+#define gpio_status()	gpio_info()
+extern void gpio_info(void);
+
+static int strtou32(const char *str, unsigned int base, u32 *result)
+{
+	char *ep;
+
+	*result = simple_strtoul(str, &ep, base);
+	if (ep == str || *ep != '\0')
+		return -EINVAL;
+
+	return 0;
+}
+#endif
+
 #if defined(CONFIG_DM_GPIO) && !defined(gpio_status)
 
 /* A few flags used by show_gpio() */
@@ -153,6 +174,23 @@ static int do_gpio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 	}
 
+#ifdef CONFIG_XILINX_GPIO
+	if (!strncmp(str_cmd, "alloc", 2)) {
+		u32 baseaddr, gpio_no;
+		char *name = NULL;
+		if (argc < 2 || argc > 4)
+			goto show_usage;
+		if (strtou32(argv[0], 0, &baseaddr))
+			goto show_usage;
+		if (strtou32(argv[1], 0, &gpio_no))
+			goto show_usage;
+		if (argc == 3)
+			name = argv[2];
+		gpio_alloc(baseaddr, name, gpio_no);
+		return 0;
+	}
+#endif
+
 	if (!str_gpio)
 		goto show_usage;
 
@@ -213,8 +251,17 @@ static int do_gpio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return value;
 }
 
+#ifndef CONFIG_XILINX_GPIO
 U_BOOT_CMD(gpio, 4, 0, do_gpio,
+#else
+U_BOOT_CMD(gpio, 5, 0, do_gpio,
+#endif
 	   "query and control gpio pins",
 	   "<input|set|clear|toggle> <pin>\n"
 	   "    - input/set/clear/toggle the specified pin\n"
-	   "gpio status [-a] [<bank> | <pin>]  - show [all/claimed] GPIOs");
+	   "gpio status [-a] [<bank> | <pin>]  - show [all/claimed] GPIOs"
+#ifdef CONFIG_XILINX_GPIO
+	   "\n"
+	   "gpio alloc <baseaddr> <gpio_no> [<name>]"
+#endif
+);
