@@ -386,8 +386,9 @@
 	"fpga_image=system.bit\0" \
 	"bootenv=uEnv.txt\0" \
 	"sdboot=echo Copying FIT from SD to RAM... && " \
-		"setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${mtdparts} earlyprintk && " \
+		"setenv recovery_mtdparts ${mtdparts}; " \
 		"run uenv_load; " \
+		"test -n ${bootargs} || setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${recovery_mtdparts} earlyprintk; " \
 		"if test -n ${uenvcmd}; then " \
 			"echo Running uenvcmd... && " \
 			"run uenvcmd; " \
