@@ -269,6 +269,8 @@
 	"first_boot=yes\0" \
 	"firmware=1\0" \
 	"load_addr=0x2000000\0" \
+	"fdt_high=0x7FFFFFF\0" \
+	"initrd_high=0x7FFFFFF\0" \
 	"miner_cfg_size=0x20000\0" \
 	"recovery_size=0x800000\0" \
 	"bitstream_recovery_off=0x1C00000\0" \
