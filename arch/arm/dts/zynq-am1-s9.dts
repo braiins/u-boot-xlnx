@@ -13,11 +13,6 @@
 		mmc0 = &sdhci0;
 	};
 
-	memory {
-		device_type = "memory";
-		reg = <0x0 0x3f000000>;
-	};
-
 	chosen {
 		bootargs = "earlyprintk";
 		stdout-path = "serial0:115200n8";

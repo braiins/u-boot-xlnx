@@ -15,6 +15,8 @@
 #define CONFIG_CMD_UNZIP
 #define CONFIG_CMD_SETEXPR
 
+#define CONFIG_SYS_SDRAM_SIZE (1 * 1024 * 1024 * 1024)
+
 #include <configs/zynq-common.h>
 
 #endif /* __CONFIG_ZYNQ_DM1_H */

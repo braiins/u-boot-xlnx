@@ -115,20 +115,29 @@ int dram_init(void)
 {
 	int node;
 	fdt_addr_t addr;
-	fdt_size_t size;
+	fdt_size_t size = 0;
 	const void *blob = gd->fdt_blob;
+	const fdt_size_t fpga_memory = 16 * 1024 * 1024;
 
 	node = fdt_node_offset_by_prop_value(blob, -1, "device_type",
 					     "memory", 7);
-	if (node == -FDT_ERR_NOTFOUND) {
+	if (node < 0) {
 		debug("ZYNQ DRAM: Can't get memory node\n");
-		return -1;
+	} else {
+		addr = fdtdec_get_addr_size(blob, node, "reg", &size);
+		if (addr == FDT_ADDR_T_NONE || size == 0) {
+			debug("ZYNQ DRAM: Can't get base address or size\n");
+		}
 	}
-	addr = fdtdec_get_addr_size(blob, node, "reg", &size);
-	if (addr == FDT_ADDR_T_NONE || size == 0) {
-		debug("ZYNQ DRAM: Can't get base address or size\n");
-		return -1;
+	if (size == 0) {
+		size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
+									CONFIG_SYS_SDRAM_SIZE);
 	}
+#ifdef CONFIG_TARGET_ZYNQ_AM1_S9
+	if (size >= fpga_memory) {
+		size -= fpga_memory;
+	}
+#endif
 	gd->ram_size = size;
 	zynq_ddrc_init();
 
