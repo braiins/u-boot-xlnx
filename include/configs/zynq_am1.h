@@ -17,6 +17,13 @@
 
 #define CONFIG_SYS_SDRAM_SIZE (1 * 1024 * 1024 * 1024)
 
+#define CONFIG_ZYNQ_GPIO
+
+#define GPIO_INIT \
+	"led_green=38\0" \
+	"led_red=37\0" \
+	"button_ip=51\0"
+
 #include <configs/zynq-common.h>
 
 #endif /* __CONFIG_ZYNQ_DM1_H */

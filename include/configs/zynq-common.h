@@ -39,7 +39,6 @@
 #define CONFIG_ARM_DCC
 #define CONFIG_ZYNQ_SERIAL
 
-#define CONFIG_XILINX_GPIO
 #define CONFIG_CMD_GPIO
 
 /* Ethernet driver */
@@ -261,6 +260,14 @@
 #define CONFIG_UENV_ADDR	"0x2100000"
 #define CONFIG_UENV_SIZE	"0x1000"
 
+#ifndef GPIO_INIT
+#define GPIO_INIT
+#endif
+
+#ifndef GPIO_INIT_RUN
+#define GPIO_INIT_RUN
+#endif
+
 /* Default environment */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"recovery_delay=0x3\0" \
@@ -276,16 +283,7 @@
 	"bitstream_recovery_off=0x1C00000\0" \
 	"bitstream_addr=0x2100000\0" \
 	"bitstream_size=0x100000\0" \
-	"gpio_output_addr=0x41210000\0" \
-	"gpio_output_width=0x1c\0" \
-	"gpio_input_addr=0x41230000\0" \
-	"gpio_input_width=0x1\0" \
-	"led_green=2\0" \
-	"led_red=3\0" \
-	"button_ip=28\0" \
-	"gpio_init=" \
-		"gpio alloc ${gpio_output_addr} ${gpio_output_width} output && " \
-		"gpio alloc ${gpio_input_addr} ${gpio_input_width} input\0" \
+	GPIO_INIT \
 	"uenv_load=" \
 		"load mmc 0 ${load_addr} ${bootenv} && " \
 		"echo Loaded environment from ${bootenv} && " \
@@ -348,16 +346,16 @@
 		"while gpio input ${button_ip}; do " \
 			"sleep 1; " \
 			"setexpr count ${count} + 1; " \
-			"itest ${count} >= ${recovery_delay} && gpio toggle ${led_green} 1; " \
+			"itest ${count} >= ${recovery_delay} && gpio toggle ${led_green}; " \
 			"if itest ${count} >= ${factory_reset_delay}; then " \
-				"gpio set ${led_green} 1; " \
-				"gpio set ${led_red} 1; " \
+				"gpio set ${led_green}; " \
+				"gpio set ${led_red}; " \
 				"run uenv_reset; " \
 			"fi; " \
 		"done; " \
-		"gpio set ${led_green} 1; " \
+		"gpio set ${led_green}; " \
 		"itest ${count} >= ${recovery_delay} && run nandboot_recovery; " \
-		"gpio set ${led_green} 0; " \
+		"gpio clear ${led_green}; " \
 		"exit 0\0" \
 	"nandboot_default=echo Copying FIT from NAND flash to RAM... && " \
 		"if test x${recovery} = xyes; then " \
@@ -377,11 +375,11 @@
 		"nand read ${load_addr} ${bitstream} ${bitstream_size} && " \
 		"unzip ${load_addr} ${bitstream_addr} && " \
 		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
-		"run gpio_init && " \
+		GPIO_INIT_RUN \
 		"run nandboot_mode_select && " \
 		"ubi part ${firmware_name} && " \
 		"ubi read ${load_addr} kernel && " \
-		"gpio set ${led_green} 1; " \
+		"gpio set ${led_green}; " \
 		"bootm ${load_addr}\0" \
 	"nandboot=run nandboot_init\0" \
 	"fit_image=fit.itb\0" \
@@ -397,9 +395,9 @@
 		"fi; " \
 		"load mmc 0 ${load_addr} ${fpga_image} && " \
 		"fpga loadb 0 ${load_addr} ${filesize} && " \
-		"run gpio_init && " \
+		GPIO_INIT_RUN \
 		"load mmc 0 ${load_addr} ${fit_image} && " \
-		"gpio set ${led_green} 1; " \
+		"gpio set ${led_green}; " \
 		"bootm ${load_addr}\0" \
 	"mtdids=" MTDIDS_DEFAULT "\0" \
 	"mtdparts=" MTDPARTS_DEFAULT "\0" \
