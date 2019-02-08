@@ -40,6 +40,9 @@ config TARGET_ZYNQ_DM1_G9
 config TARGET_ZYNQ_DM1_G19
 	bool "Zynq DragonMint T1/G19 Board"
 
+config TARGET_ZYNQ_DM1_G29
+	bool "Zynq DragonMint T1/G29 Board"
+
 config TARGET_ZYNQ_AM1_S9
 	bool "Zynq AntMiner S9 Board"
 
@@ -61,7 +64,7 @@ config SYS_CONFIG_NAME
 	default "zynq_zc70x" if TARGET_ZYNQ_ZC702 || TARGET_ZYNQ_ZC706
 	default "zynq_zc770" if TARGET_ZYNQ_ZC770
 	default "zynq_zybo" if TARGET_ZYNQ_ZYBO
-	default "zynq_dm1" if TARGET_ZYNQ_DM1_G9 || TARGET_ZYNQ_DM1_G19
+	default "zynq_dm1" if TARGET_ZYNQ_DM1_G9 || TARGET_ZYNQ_DM1_G19 || TARGET_ZYNQ_DM1_G29
 	default "zynq_am1" if TARGET_ZYNQ_AM1_S9
 
 endif
