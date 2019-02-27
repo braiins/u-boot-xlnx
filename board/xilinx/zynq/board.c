@@ -117,7 +117,6 @@ int dram_init(void)
 	fdt_addr_t addr;
 	fdt_size_t size = 0;
 	const void *blob = gd->fdt_blob;
-	const fdt_size_t fpga_memory = 16 * 1024 * 1024;
 
 	node = fdt_node_offset_by_prop_value(blob, -1, "device_type",
 					     "memory", 7);
@@ -133,11 +132,6 @@ int dram_init(void)
 		size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
 									CONFIG_SYS_SDRAM_SIZE);
 	}
-#ifdef CONFIG_TARGET_ZYNQ_AM1_S9
-	if (size >= fpga_memory) {
-		size -= fpga_memory;
-	}
-#endif
 	gd->ram_size = size;
 	zynq_ddrc_init();
 
