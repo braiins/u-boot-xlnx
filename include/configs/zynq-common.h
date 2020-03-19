@@ -283,12 +283,20 @@
 	"bitstream_recovery_off=0x1C00000\0" \
 	"bitstream_addr=0x2100000\0" \
 	"bitstream_size=0x100000\0" \
+	"boot_recovery_off=0x1D00000\0" \
+	"boot_recovery_size=0x20000\0" \
+	"boot_addr=0x2040000\0" \
+	"boot_size=0x40000\0" \
+	"uboot_recovery_off=0x1D20000\0" \
+	"uboot_recovery_size=0xE0000\0" \
+	"uboot_addr=0x2200000\0" \
+	"uboot_size=0x200000\0" \
 	GPIO_INIT \
 	"uenv_load=" \
 		"load mmc 0 ${load_addr} ${bootenv} && " \
 		"echo Loaded environment from ${bootenv} && " \
 		"env import -t ${load_addr} ${filesize}\0" \
-	"uenv_reset=echo Reseting miner configuration... && " \
+	"uenv_reset=echo Resetting miner configuration... && " \
 		"nand erase.part uboot_env && " \
 		"reset\0" \
 	"firmware_select=" \
@@ -320,7 +328,33 @@
 		"else " \
 			"exit 0; " \
 		"fi\0" \
+	"bootloaders_repair=" \
+		"do_reset=no && " \
+		"nand read ${load_addr} ${boot_recovery_off} ${boot_recovery_size} && " \
+		"mw.b ${boot_addr} 0xff ${boot_size} && " \
+		"unzip ${load_addr} ${boot_addr} && " \
+		"nand read ${load_addr} boot ${boot_size} && " \
+		"if cmp.b ${load_addr} ${boot_addr} ${boot_size}; then true; else " \
+			"echo Restoring factory SPL... && " \
+			"nand erase.part boot && " \
+			"nand write ${boot_addr} boot ${boot_size} && " \
+			"do_reset=yes; " \
+		"fi; " \
+		"nand read ${load_addr} ${uboot_recovery_off} ${uboot_recovery_size} && " \
+		"mw.b ${uboot_addr} 0xff ${uboot_size} && " \
+		"unzip ${load_addr} ${uboot_addr} && " \
+		"nand read ${load_addr} uboot ${uboot_size} && " \
+		"if cmp.b ${load_addr} ${uboot_addr} ${uboot_size}; then true; else " \
+			"echo Restoring factory U-Boot... && " \
+			"nand erase.part uboot && " \
+			"nand write ${uboot_addr} uboot ${uboot_size} && " \
+			"nand erase.part uboot_env; " \
+			"do_reset=yes; " \
+		"fi; " \
+		"test x${do_reset} = xyes && reset; " \
+		"exit 0\0" \
 	"nandboot_init=echo Running factory reset... && " \
+		"run bootloaders_repair && " \
 		"env default -a && " \
 		"if run uenv_load; then " \
 			"env export -s "CONFIG_UENV_SIZE" -t "CONFIG_UENV_ADDR" sd_boot sd_images && " \
