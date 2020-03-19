@@ -383,7 +383,7 @@
 		"bootm ${load_addr}\0" \
 	"nandboot=run nandboot_init\0" \
 	"fit_image=fit.itb\0" \
-	"fpga_image=system.bit\0" \
+	"fpga_image=system.bit.gz\0" \
 	"bootenv=uEnv.txt\0" \
 	"sdboot=echo Copying FIT from SD to RAM... && " \
 		"setenv recovery_mtdparts ${mtdparts}; " \
@@ -394,7 +394,8 @@
 			"run uenvcmd; " \
 		"fi; " \
 		"load mmc 0 ${load_addr} ${fpga_image} && " \
-		"fpga loadb 0 ${load_addr} ${filesize} && " \
+		"unzip ${load_addr} ${bitstream_addr} && " \
+		"fpga loadb 0 ${bitstream_addr} ${bitstream_size} && " \
 		GPIO_INIT_RUN \
 		"load mmc 0 ${load_addr} ${fit_image} && " \
 		"gpio set ${led_green}; " \
