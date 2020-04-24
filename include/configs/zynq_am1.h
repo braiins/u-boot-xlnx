@@ -24,6 +24,9 @@
 	"led_red=37\0" \
 	"button_ip=51\0"
 
+#define SD_MTDPARTS_SUFFIX \
+	",144m@0x2000000(antminer_rootfs)"
+
 #include <configs/zynq-common.h>
 
 #endif /* __CONFIG_ZYNQ_DM1_H */
