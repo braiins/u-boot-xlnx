@@ -46,6 +46,9 @@ config TARGET_ZYNQ_DM1_G29
 config TARGET_ZYNQ_AM1_S9
 	bool "Zynq AntMiner S9 Board"
 
+config TARGET_ZYNQ_AM2_S15
+	bool "Zynq Antminer S15 Board"
+
 endchoice
 
 config SYS_BOARD
@@ -66,5 +69,6 @@ config SYS_CONFIG_NAME
 	default "zynq_zybo" if TARGET_ZYNQ_ZYBO
 	default "zynq_dm1" if TARGET_ZYNQ_DM1_G9 || TARGET_ZYNQ_DM1_G19 || TARGET_ZYNQ_DM1_G29
 	default "zynq_am1" if TARGET_ZYNQ_AM1_S9
+	default "zynq_am2" if TARGET_ZYNQ_AM2_S15
 
 endif
