@@ -421,9 +421,9 @@
 		"setenv recovery_mtdparts ${mtdparts}"SD_MTDPARTS_SUFFIX"; " \
 		"run uenv_load; " \
 		"test -n ${bootargs} || setenv bootargs console=ttyPS0,115200 root=/dev/ram0 r rootfstype=squashfs ${recovery_mtdparts} earlyprintk; " \
-		"if test -n ${uenvcmd}; then " \
-			"echo Running uenvcmd... && " \
-			"run uenvcmd; " \
+		"if test -n ${sd_uenvcmd}; then " \
+			"echo Running sd_uenvcmd... && " \
+			"run sd_uenvcmd; " \
 		"fi; " \
 		"load mmc 0 ${load_addr} ${fpga_image} && " \
 		"unzip ${load_addr} ${bitstream_addr} && " \
