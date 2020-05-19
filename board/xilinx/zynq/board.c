@@ -84,6 +84,10 @@ int board_init(void)
 
 int board_late_init(void)
 {
+#ifdef CONFIG_SD_BOOT
+	puts("Boot:  SD\n");
+	setenv("modeboot", "sdboot");
+#else
 	puts("Boot:  ");
 
 	switch ((zynq_slcr_get_boot_mode()) & ZYNQ_BM_MASK) {
@@ -111,6 +115,7 @@ int board_late_init(void)
 		setenv("modeboot", "");
 		break;
 	}
+#endif
 
 	return 0;
 }
