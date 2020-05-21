@@ -20,12 +20,12 @@
 #define CONFIG_ZYNQ_GPIO
 
 #define GPIO_INIT \
-	"led_green=38\0" \
-	"led_red=37\0" \
-	"button_ip=51\0"
+	"led_green=36\0" \
+	"led_red=35\0" \
+	"button_ip=37\0"
 
 #define SD_MTDPARTS_SUFFIX \
-	",144m@0x2000000(antminer_rootfs)"
+	",8m@0x4800000(antminer_configs)"
 
 #include <configs/zynq-common.h>
 
