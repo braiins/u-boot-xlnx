@@ -18,6 +18,7 @@ hw-platform-$(CONFIG_TARGET_ZYNQ_DM1_G19)	:= dm1_g19_hw_platform
 hw-platform-$(CONFIG_TARGET_ZYNQ_DM1_G29)	:= dm1_g29_hw_platform
 hw-platform-$(CONFIG_TARGET_ZYNQ_AM1_S9)	:= am1_s9_hw_platform
 hw-platform-$(CONFIG_TARGET_ZYNQ_AM2_S15)	:= am2_s15_hw_platform
+hw-platform-$(CONFIG_TARGET_ZYNQ_AM2_S17)	:= am2_s17_hw_platform
 # If you want to use customized ps7_init_gpl.c/h,
 # enable CONFIG_ZYNQ_CUSTOM_INIT and put them into custom_hw_platform/.
 # This line must be placed at the bottom of the list because
